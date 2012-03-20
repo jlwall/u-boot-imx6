@@ -35,5 +35,6 @@ void set_chipselect_size(int const);
  */
 
 int fecmxc_initialize(bd_t *bis);
+u32 get_ahb_clk(void);
 
 #endif
