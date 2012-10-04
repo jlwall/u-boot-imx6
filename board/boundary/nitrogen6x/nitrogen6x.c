@@ -69,6 +69,18 @@ DECLARE_GLOBAL_DATA_PTR;
 	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
 
+#define WEAK_PULLUP	(PAD_CTL_PKE | PAD_CTL_PUE |		\
+	PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |		\
+	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
+	PAD_CTL_SRE_SLOW)
+
+#define WEAK_PULLDOWN	(PAD_CTL_PKE | PAD_CTL_PUE |		\
+	PAD_CTL_PUS_100K_DOWN | PAD_CTL_SPEED_MED |		\
+	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
+	PAD_CTL_SRE_SLOW)
+
+#define OUTPUT_40OHM (PAD_CTL_SPEED_MED|PAD_CTL_DSE_40ohm)
+
 int dram_init(void)
 {
        gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
@@ -185,6 +197,16 @@ iomux_v3_cfg_t const enet_pads2[] = {
 	MX6Q_PAD_RGMII_RD3__ENET_RGMII_RD3	| MUX_PAD_CTRL(ENET_PAD_CTRL),
 	MX6Q_PAD_RGMII_RX_CTL__RGMII_RX_CTL	| MUX_PAD_CTRL(ENET_PAD_CTRL),
 };
+
+/* wl1271 pads on nitrogen6x */
+iomux_v3_cfg_t const wl12xx_pads[] = {
+	(MX6Q_PAD_NANDF_CS1__GPIO_6_14 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(WEAK_PULLDOWN),
+	(MX6Q_PAD_NANDF_CS2__GPIO_6_15 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(OUTPUT_40OHM),
+	(MX6Q_PAD_NANDF_CS3__GPIO_6_16 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(OUTPUT_40OHM),
+};
+#define WL12XX_WL_IRQ_GP	IMX_GPIO_NR(6,14)
+#define WL12XX_WL_ENABLE_GP	IMX_GPIO_NR(6,15)
+#define WL12XX_BT_ENABLE_GP	IMX_GPIO_NR(6,16)
 
 /* Button assignments for J14 */
 static iomux_v3_cfg_t const button_pads[] = {
@@ -695,6 +717,13 @@ static void setup_display(void)
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
+
+	/* Disable wl1271 For Nitrogen6w */
+	gpio_direction_input(WL12XX_WL_IRQ_GP);
+	gpio_direction_output(WL12XX_WL_ENABLE_GP,0);
+	gpio_direction_output(WL12XX_BT_ENABLE_GP,0);
+
+	imx_iomux_v3_setup_multiple_pads(wl12xx_pads, ARRAY_SIZE(wl12xx_pads));
 	setup_buttons();
 
 #if defined(CONFIG_VIDEO_IPUV3)
@@ -733,7 +762,10 @@ int board_init(void)
 
 int checkboard(void)
 {
-       puts("Board: Nitrogen6X or MX6Q-Sabre Lite\n");
+	if (gpio_get_value(WL12XX_WL_IRQ_GP)) {
+		puts("Board: Nitrogen6X\n");
+	} else
+		puts("Board: SABRE Lite\n");
 
        return 0;
 }
