@@ -133,6 +133,7 @@
 #define CONFIG_BMP_16BPP
 #define CONFIG_VIDEO_LOGO
 #define CONFIG_IPUV3_CLK 260000000
+#define CONFIG_CONSOLE_MUX
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -156,14 +157,18 @@
 	"clearenv=if sf probe || sf probe || sf probe 1 ; then sf erase 0xc0000 0x2000 && " \
 		"echo restored environment to factory default ; fi\0" \
 	"bootcmd=for dtype in sata mmc ; do " \
-		"for disk in 0 1 ; do ${dtype} dev ${disk} ;" \
-			"for fs in fat ext2 ; do " \
-				"${fs}load ${dtype} ${disk}:1 10008000 " \
-					"/6q_bootscript" \
-					"&& source 10008000 ; " \
+			"for disk in 0 1 ; do ${dtype} dev ${disk} ;" \
+				"for fs in fat ext2 ; do " \
+					"${fs}load ${dtype} ${disk}:1 10008000 " \
+						"/6q_bootscript" \
+						"&& source 10008000 ; " \
+				"done ; " \
 			"done ; " \
-		"done ; " \
-	"done\0" \
+		"done; " \
+		"setenv stdout serial,vga ; " \
+		"echo ; echo 6q_bootscript not found ; " \
+		"echo ; echo serial console at 115200, 8N1 ; " \
+		"echo ; echo details at http://boundarydevices.com/6q_bootscript ; setenv stdout serial\0" \
 	"upgradeu=for dtype in sata mmc ; do " \
 		"for disk in 0 1 ; do ${dtype} dev ${disk} ;" \
 		     "for fs in fat ext2 ; do " \
