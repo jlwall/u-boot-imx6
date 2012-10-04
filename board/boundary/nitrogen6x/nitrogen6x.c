@@ -174,6 +174,7 @@ iomux_v3_cfg_t const enet_pads1[] = {
 	MX6Q_PAD_RGMII_RX_CTL__GPIO_6_24	| MUX_PAD_CTRL(NO_PAD_CTRL),
 	/* pin 42 PHY nRST */
 	MX6Q_PAD_EIM_D23__GPIO_3_23		| MUX_PAD_CTRL(NO_PAD_CTRL),
+	MX6Q_PAD_ENET_RXD0__GPIO_1_27		| MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
 iomux_v3_cfg_t const enet_pads2[] = {
@@ -203,7 +204,8 @@ static iomux_v3_cfg_t const button_pads[] = {
 
 static void setup_iomux_enet(void)
 {
-	gpio_direction_output(IMX_GPIO_NR(3, 23), 0);
+	gpio_direction_output(IMX_GPIO_NR(3, 23), 0); /* SABRE Lite PHY rst */
+	gpio_direction_output(IMX_GPIO_NR(1, 27), 0); /* Nitrogen6X PHY rst */
 	gpio_direction_output(IMX_GPIO_NR(6, 30), 1);
 	gpio_direction_output(IMX_GPIO_NR(6, 25), 1);
 	gpio_direction_output(IMX_GPIO_NR(6, 27), 1);
@@ -214,7 +216,8 @@ static void setup_iomux_enet(void)
 
 	/* Need delay 10ms according to KSZ9021 spec */
 	udelay(1000 * 10);
-	gpio_set_value(IMX_GPIO_NR(3, 23), 1);
+	gpio_set_value(IMX_GPIO_NR(3, 23), 1); /* SABRE Lite PHY reset */
+	gpio_set_value(IMX_GPIO_NR(1, 27), 1); /* Nitrogen6X PHY reset */
 
 	imx_iomux_v3_setup_multiple_pads(enet_pads2, ARRAY_SIZE(enet_pads2));
 }
