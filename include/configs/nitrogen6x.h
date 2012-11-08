@@ -171,20 +171,20 @@
 			"for disk in 0 1 ; do ${dtype} dev ${disk} ;" \
 				"for fs in fat ext2 ; do " \
 					"${fs}load ${dtype} ${disk}:1 10008000 " \
-						"/6q_bootscript" \
+						"/6x_bootscript" \
 						"&& source 10008000 ; " \
 				"done ; " \
 			"done ; " \
 		"done; " \
 		"setenv stdout serial,vga ; " \
-		"echo ; echo 6q_bootscript not found ; " \
+		"echo ; echo 6x_bootscript not found ; " \
 		"echo ; echo serial console at 115200, 8N1 ; " \
 		"echo ; echo details at http://boundarydevices.com/6q_bootscript ; setenv stdout serial\0" \
 	"upgradeu=for dtype in sata mmc ; do " \
 		"for disk in 0 1 ; do ${dtype} dev ${disk} ;" \
 		     "for fs in fat ext2 ; do " \
 				"${fs}load ${dtype} ${disk}:1 10008000 " \
-					"/6q_upgrade " \
+					"/6x_upgrade " \
 					"&& source 10008000 ; " \
 			"done ; " \
 		"done ; " \
