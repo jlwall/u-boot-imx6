@@ -1010,6 +1010,9 @@ Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
 
 	armadillo-800eva	R8A7740 (RMOBILE SoC)
 
+Eric Nelson <eric.nelson@boundarydevices.com>
+	nitrogen6x	i.MX6Q//i.MX6D/i.MX6DL/i.MX6S
+
 -------------------------------------------------------------------------
 
 Unknown / orphaned boards:
