@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
+ * Copyright (C) 2010-2013 Freescale Semiconductor, Inc.
+ * Copyright (C) 2013, Boundary Devices <info@boundarydevices.com>
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -25,7 +26,9 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux.h>
-#include <asm/arch/mx6q_pins.h>
+#include <asm/arch/sys_proto.h>
+#include <malloc.h>
+#include <asm/arch/mx6-pins.h>
 #include <asm/errno.h>
 #include <asm/gpio.h>
 #include <asm/imx-common/iomux-v3.h>
@@ -33,7 +36,6 @@
 #include <asm/imx-common/boot_mode.h>
 #include <mmc.h>
 #include <fsl_esdhc.h>
-#include <malloc.h>
 #include <micrel.h>
 #include <miiphy.h>
 #include <netdev.h>
@@ -70,9 +72,21 @@ DECLARE_GLOBAL_DATA_PTR;
 	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
 
+#define WEAK_PULLUP	(PAD_CTL_PKE | PAD_CTL_PUE |		\
+	PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |		\
+	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
+	PAD_CTL_SRE_SLOW)
+
+#define WEAK_PULLDOWN	(PAD_CTL_PKE | PAD_CTL_PUE |		\
+	PAD_CTL_PUS_100K_DOWN | PAD_CTL_SPEED_MED |		\
+	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
+	PAD_CTL_SRE_SLOW)
+
+#define OUTPUT_40OHM (PAD_CTL_SPEED_MED|PAD_CTL_DSE_40ohm)
+
 int dram_init(void)
 {
-	gd->ram_size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE);
+	gd->ram_size = imx_ddr_size();
 
 	return 0;
 }
@@ -175,6 +189,7 @@ iomux_v3_cfg_t const enet_pads1[] = {
 	MX6_PAD_RGMII_RX_CTL__GPIO_6_24	| MUX_PAD_CTRL(NO_PAD_CTRL),
 	/* pin 42 PHY nRST */
 	MX6_PAD_EIM_D23__GPIO_3_23		| MUX_PAD_CTRL(NO_PAD_CTRL),
+	MX6_PAD_ENET_RXD0__GPIO_1_27		| MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
 iomux_v3_cfg_t const enet_pads2[] = {
@@ -185,6 +200,19 @@ iomux_v3_cfg_t const enet_pads2[] = {
 	MX6_PAD_RGMII_RD3__ENET_RGMII_RD3	| MUX_PAD_CTRL(ENET_PAD_CTRL),
 	MX6_PAD_RGMII_RX_CTL__RGMII_RX_CTL	| MUX_PAD_CTRL(ENET_PAD_CTRL),
 };
+
+/* wl1271 pads on nitrogen6x */
+iomux_v3_cfg_t const wl12xx_pads[] = {
+	(MX6_PAD_NANDF_CS1__GPIO_6_14 & ~MUX_PAD_CTRL_MASK)
+		| MUX_PAD_CTRL(WEAK_PULLDOWN),
+	(MX6_PAD_NANDF_CS2__GPIO_6_15 & ~MUX_PAD_CTRL_MASK)
+		| MUX_PAD_CTRL(OUTPUT_40OHM),
+	(MX6_PAD_NANDF_CS3__GPIO_6_16 & ~MUX_PAD_CTRL_MASK)
+		| MUX_PAD_CTRL(OUTPUT_40OHM),
+};
+#define WL12XX_WL_IRQ_GP	IMX_GPIO_NR(6, 14)
+#define WL12XX_WL_ENABLE_GP	IMX_GPIO_NR(6, 15)
+#define WL12XX_BT_ENABLE_GP	IMX_GPIO_NR(6, 16)
 
 /* Button assignments for J14 */
 static iomux_v3_cfg_t const button_pads[] = {
@@ -204,7 +232,8 @@ static iomux_v3_cfg_t const button_pads[] = {
 
 static void setup_iomux_enet(void)
 {
-	gpio_direction_output(IMX_GPIO_NR(3, 23), 0);
+	gpio_direction_output(IMX_GPIO_NR(3, 23), 0); /* SABRE Lite PHY rst */
+	gpio_direction_output(IMX_GPIO_NR(1, 27), 0); /* Nitrogen6X PHY rst */
 	gpio_direction_output(IMX_GPIO_NR(6, 30), 1);
 	gpio_direction_output(IMX_GPIO_NR(6, 25), 1);
 	gpio_direction_output(IMX_GPIO_NR(6, 27), 1);
@@ -215,7 +244,8 @@ static void setup_iomux_enet(void)
 
 	/* Need delay 10ms according to KSZ9021 spec */
 	udelay(1000 * 10);
-	gpio_set_value(IMX_GPIO_NR(3, 23), 1);
+	gpio_set_value(IMX_GPIO_NR(3, 23), 1); /* SABRE Lite PHY reset */
+	gpio_set_value(IMX_GPIO_NR(1, 27), 1); /* Nitrogen6X PHY reset */
 
 	imx_iomux_v3_setup_multiple_pads(enet_pads2, ARRAY_SIZE(enet_pads2));
 }
@@ -281,14 +311,14 @@ int board_mmc_init(bd_t *bis)
 				usdhc3_pads, ARRAY_SIZE(usdhc3_pads));
 			break;
 		case 1:
-			imx_iomux_v3_setup_multiple_pads(
-				usdhc4_pads, ARRAY_SIZE(usdhc4_pads));
+		       imx_iomux_v3_setup_multiple_pads(
+			       usdhc4_pads, ARRAY_SIZE(usdhc4_pads));
 		       break;
-	       default:
-			printf("Warning: you configured more USDHC controllers"
+		default:
+		       printf("Warning: you configured more USDHC controllers"
 			       "(%d) then supported by the board (%d)\n",
 			       index + 1, CONFIG_SYS_FSL_USDHC_NUM);
-			return status;
+		       return status;
 		}
 
 		status |= fsl_esdhc_initialize(bis, &usdhc_cfg[index]);
@@ -300,7 +330,7 @@ int board_mmc_init(bd_t *bis)
 
 u32 get_board_rev(void)
 {
-	return 0x63000 ;
+	return 0x63000;
 }
 
 #ifdef CONFIG_MXC_SPI
@@ -713,6 +743,13 @@ static void setup_display(void)
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
+
+	/* Disable wl1271 For Nitrogen6w */
+	gpio_direction_input(WL12XX_WL_IRQ_GP);
+	gpio_direction_output(WL12XX_WL_ENABLE_GP, 0);
+	gpio_direction_output(WL12XX_BT_ENABLE_GP, 0);
+
+	imx_iomux_v3_setup_multiple_pads(wl12xx_pads, ARRAY_SIZE(wl12xx_pads));
 	setup_buttons();
 
 #if defined(CONFIG_VIDEO_IPUV3)
@@ -753,8 +790,10 @@ int check_cpu_temperature(void);
 
 int checkboard(void)
 {
-	puts("Board: MX6Q-Sabre Lite\n");
-	check_cpu_temperature();
+	if (gpio_get_value(WL12XX_WL_IRQ_GP))
+		puts("Board: Nitrogen6X\n");
+	else
+		puts("Board: SABRE Lite\n");
 
 	return 0;
 }
@@ -853,6 +892,7 @@ static const struct boot_mode board_boot_modes[] = {
 
 int misc_init_r(void)
 {
+	check_cpu_temperature();
 #ifdef CONFIG_PREBOOT
 	preboot_keys();
 #endif

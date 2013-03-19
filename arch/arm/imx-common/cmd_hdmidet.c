@@ -1,6 +1,5 @@
 /*
- * (C) Copyright 2009
- * Stefano Babic, DENX Software Engineering, sbabic@denx.de.
+ * Copyright (C) 2012 Boundary Devices Inc.
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -20,35 +19,19 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
+#include <common.h>
+#include <asm/arch/imx-regs.h>
+#include <asm/arch/mxc_hdmi.h>
+#include <asm/io.h>
 
-#ifndef _SYS_PROTO_H_
-#define _SYS_PROTO_H_
+static int do_hdmidet(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	u8 reg = __raw_readb(HDMI_ARB_BASE_ADDR+HDMI_PHY_STAT0);
+	return (reg&HDMI_PHY_HPD)
+		? 0 : 1;
+}
 
-#define MXC_CPU_MX51		0x51
-#define MXC_CPU_MX53		0x53
-#define MXC_CPU_MX6SL		0x60
-#define MXC_CPU_MX6DL		0x61
-#define MXC_CPU_MX6SOLO		0x62
-#define MXC_CPU_MX6Q		0x63
-
-#define is_soc_rev(rev)	((get_cpu_rev() & 0xFF) - rev)
-u32 get_cpu_rev(void);
-const char *get_imx_type(u32 imxtype);
-unsigned imx_ddr_size(void);
-
-void set_vddsoc(u32 mv);
-
-/*
- * Initializes on-chip ethernet controllers.
- * to override, implement board_eth_init()
- */
-
-int fecmxc_initialize(bd_t *bis);
-u32 get_ahb_clk(void);
-u32 get_periph_clk(void);
-
-/* OTP related functionality */
-int imx_otp_read_one_u32(u32, u32 *);
-int imx_otp_blow_one_u32(u32, u32, u32 *);
-void enable_otp_clk(unsigned char);
-#endif
+U_BOOT_CMD(hdmidet, 1, 1, do_hdmidet,
+	"detect HDMI monitor",
+	""
+);

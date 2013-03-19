@@ -1,9 +1,7 @@
 #
-# (C) Copyright 2002
-# Gary Jennejohn, DENX Software Engineering, <garyj@denx.de>
-#
-# See file CREDITS for list of people who contributed to this
-# project.
+# Copyright (C) 2012-2013, Guennadi Liakhovetski <lg@denx.de>
+# (C) Copyright 2012-2013 Freescale Semiconductor, Inc.
+# Copyright (C) 2013, Boundary Devices <info@boundarydevices.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -21,19 +19,23 @@
 # MA 02111-1307 USA
 #
 
-PLATFORM_RELFLAGS += -fno-common -ffixed-r8 -msoft-float
+include $(TOPDIR)/config.mk
 
-PLATFORM_CPPFLAGS += -march=armv5te
-# =========================================================================
-#
-# Supply options according to compiler version
-#
-# =========================================================================
-PF_RELFLAGS_SLB_AT := $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,))
-PLATFORM_RELFLAGS += $(PF_RELFLAGS_SLB_AT)
+LIB    = $(obj)lib$(BOARD).o
 
-ifneq ($(CONFIG_IMX_CONFIG),)
+COBJS  := nitrogen6x.o
 
-ALL-y	+= $(obj)u-boot.imx
+SRCS   := $(COBJS:.o=.c)
+OBJS   := $(addprefix $(obj),$(COBJS))
 
-endif
+$(LIB):        $(obj).depend $(OBJS)
+	$(call cmd_link_o_target, $(OBJS))
+
+#########################################################################
+
+# defines $(obj).depend target
+include $(SRCTREE)/rules.mk
+
+sinclude $(obj).depend
+
+#########################################################################

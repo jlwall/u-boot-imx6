@@ -178,6 +178,7 @@
 #include <asm/types.h>
 
 extern void imx_get_mac_from_fuse(int dev_id, unsigned char *mac);
+extern int check_cpu_temperature(void);
 
 /* System Reset Controller (SRC) */
 struct src {
@@ -202,7 +203,9 @@ struct src {
 
 /* OCOTP Registers */
 struct ocotp_regs {
-	u32	reserved[0x198];
+	u32	reserved1[0x138];
+	u32	thermal_calibration_data;	/* 0x4e0 */
+	u32	reserved2[0x5c];
 	u32	gp1;	/* 0x660 */
 };
 
@@ -600,6 +603,32 @@ struct iomuxc_base_regs {
 	u32     swgrp[26];      /* 0x748 */
 	u32     daisy[104];     /* 0x7b0..94c */
 };
+
+struct wdog_regs {
+	u16	wcr;	/* Control */
+	u16	wsr;	/* Service */
+	u16	wrsr;	/* Reset Status */
+	u16	wicr;	/* Interrupt Control */
+	u16	wmcr;	/* Miscellaneous Control */
+};
+
+#define BP_OCOTP_CTRL_WR_UNLOCK		16
+#define BM_OCOTP_CTRL_WR_UNLOCK		0xFFFF0000
+#define BV_OCOTP_CTRL_WR_UNLOCK__KEY	0x3E77
+#define BM_OCOTP_CTRL_RELOAD_SHADOWS	0x00000400
+#define BM_OCOTP_CTRL_ERROR		0x00000200
+#define BM_OCOTP_CTRL_BUSY		0x00000100
+#define BP_OCOTP_CTRL_ADDR		0
+#define BM_OCOTP_CTRL_ADDR		0x0000007F
+
+#define BP_OCOTP_TIMING_STROBE_READ	16
+#define BM_OCOTP_TIMING_STROBE_READ	0x003F0000
+#define BP_OCOTP_TIMING_RELAX		12
+#define BM_OCOTP_TIMING_RELAX		0x0000F000
+#define BP_OCOTP_TIMING_STROBE_PROG     0
+#define BM_OCOTP_TIMING_STROBE_PROG	0x00000FFF
+
+#define BM_OCOTP_READ_CTRL_READ_FUSE	0x00000001
 
 #endif /* __ASSEMBLER__*/
 #endif /* __ASM_ARCH_MX6_IMX_REGS_H__ */
